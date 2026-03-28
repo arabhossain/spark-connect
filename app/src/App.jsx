@@ -7,7 +7,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Toaster, toast } from "react-hot-toast";
 import "./styles/tabs.css";
 
-const API = "http://localhost:4000";
+const API = "https://sparkconnect.codesparks.me";
 
 export default function App() {
     const [token, setToken] = useState(localStorage.getItem("token"));
