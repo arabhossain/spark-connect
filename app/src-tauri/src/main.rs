@@ -12,7 +12,6 @@ enum AuthState {
     Init,
     JumpPassword,
     TargetPassword,
-    Passphrase,
     Connected,
     Failed,
 }
@@ -30,6 +29,8 @@ struct JumpHost {
     host: String,
     user: String,
     password: Option<String>,
+    private_key: Option<String>,
+    passphrase: Option<String>,
 }
 
 #[tauri::command]
@@ -57,19 +58,46 @@ fn ssh_connect(
     let mut cmd = CommandBuilder::new("ssh");
 
     cmd.arg("-tt");
-    cmd.arg("-o");
-    cmd.arg("StrictHostKeyChecking=no");
-    cmd.arg("-o");
-    cmd.arg("UserKnownHostsFile=/dev/null");
+
+    cmd.arg("-o"); cmd.arg("StrictHostKeyChecking=no");
+    cmd.arg("-o"); cmd.arg("UserKnownHostsFile=/dev/null");
+    cmd.arg("-o"); cmd.arg("HostKeyAlgorithms=+ssh-rsa");
+    cmd.arg("-o"); cmd.arg("PubkeyAcceptedAlgorithms=+ssh-rsa");
+
+    let mut jump_key_path: Option<String> = None;
 
     if let Some(jump) = &jump_host {
-        cmd.arg("-J");
-        cmd.arg(format!("{}@{}", jump.user, jump.host));
+        if let Some(ref key) = jump.private_key {
+            let path = format!("/tmp/jump_key_{}", session_id);
+            std::fs::write(&path, key).map_err(|e| e.to_string())?;
+
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).ok();
+
+            jump_key_path = Some(path);
+        }
+    }
+
+    if let Some(jump) = &jump_host {
+        let mut proxy_cmd = String::from("ssh ");
+
+        proxy_cmd.push_str("-o StrictHostKeyChecking=no ");
+        proxy_cmd.push_str("-o UserKnownHostsFile=/dev/null ");
+        proxy_cmd.push_str("-o HostKeyAlgorithms=+ssh-rsa ");
+        proxy_cmd.push_str("-o PubkeyAcceptedAlgorithms=+ssh-rsa ");
+
+        if let Some(ref path) = jump_key_path {
+            proxy_cmd.push_str(&format!("-i {} -o IdentitiesOnly=yes ", path));
+        }
+
+        proxy_cmd.push_str(&format!("-W %h:%p {}@{}", jump.user, jump.host));
+
+        cmd.arg("-o");
+        cmd.arg(format!("ProxyCommand={}", proxy_cmd));
     }
 
     if let Some(key) = private_key {
         let key_path = format!("/tmp/ssh_key_{}", session_id);
-
         std::fs::write(&key_path, key).map_err(|e| e.to_string())?;
 
         use std::os::unix::fs::PermissionsExt;
@@ -92,9 +120,10 @@ fn ssh_connect(
     let app_handle = app.clone();
     let sid = session_id.clone();
 
-    let jump_password = jump_host.and_then(|j| j.password);
+    let jump_password = jump_host.clone().and_then(|j| j.password);
+    let jump_passphrase = jump_host.clone().and_then(|j| j.passphrase);
     let target_password = password;
-    let passphrase = passphrase;
+    let target_passphrase = passphrase;
 
     thread::spawn(move || {
         let mut buffer = [0u8; 8192];
@@ -105,10 +134,9 @@ fn ssh_connect(
                 Ok(n) if n > 0 => {
                     let output = String::from_utf8_lossy(&buffer[..n]).to_string();
 
-                    // ✅ SEND OUTPUT TO FRONTEND
                     let _ = app_handle.emit(
                         &format!("ssh-output-{}", sid),
-                        output.clone()
+                        output.clone(),
                     );
 
                     let text = output.to_lowercase();
@@ -124,10 +152,15 @@ fn ssh_connect(
                                     let _ = w.write_all(format!("{}\n", tp).as_bytes());
                                     state = AuthState::TargetPassword;
                                 }
-                            } else if text.contains("passphrase") {
-                                if let Some(ref pp) = passphrase {
-                                    let _ = w.write_all(format!("{}\n", pp).as_bytes());
-                                    state = AuthState::Passphrase;
+                            } else if text.contains("enter passphrase") {
+                                if text.contains("jump_key") {
+                                    if let Some(ref pp) = jump_passphrase {
+                                        let _ = w.write_all(format!("{}\n", pp).as_bytes());
+                                    }
+                                } else if text.contains("ssh_key") {
+                                    if let Some(ref pp) = target_passphrase {
+                                        let _ = w.write_all(format!("{}\n", pp).as_bytes());
+                                    }
                                 }
                             }
                         }
@@ -147,14 +180,7 @@ fn ssh_connect(
                             }
                         }
 
-                        AuthState::Passphrase => {
-                            if text.contains("$") || text.contains("#") {
-                                state = AuthState::Connected;
-                            }
-                        }
-
                         AuthState::Connected => {}
-
                         AuthState::Failed => break,
                     }
 
@@ -170,7 +196,7 @@ fn ssh_connect(
 
     SSH_SESSIONS.lock().unwrap().insert(
         session_id,
-        SSHState { writer, child }
+        SSHState { writer, child },
     );
 
     Ok("connected".into())
@@ -178,14 +204,11 @@ fn ssh_connect(
 
 #[tauri::command]
 fn ssh_write(session_id: String, input: String) -> Result<(), String> {
-    let sessions = SSH_SESSIONS.lock().unwrap();
-
-    if let Some(state) = sessions.get(&session_id) {
+    if let Some(state) = SSH_SESSIONS.lock().unwrap().get(&session_id) {
         let mut writer = state.writer.lock().unwrap();
         writer.write_all(input.as_bytes()).map_err(|e| e.to_string())?;
         writer.flush().ok();
     }
-
     Ok(())
 }
 
@@ -196,6 +219,7 @@ fn ssh_disconnect(session_id: String) {
         let _ = child.kill();
     }
 }
+
 #[derive(serde::Serialize)]
 struct SSHKey {
     name: String,
@@ -219,14 +243,11 @@ fn scan_ssh() -> Result<(Vec<SSHKey>, Vec<SSHHostConfig>), String> {
     let mut keys = vec![];
     let mut hosts = vec![];
 
-    // ===== SCAN KEYS =====
     if let Ok(entries) = std::fs::read_dir(&ssh_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-
             if path.is_file() {
                 let filename = path.file_name().unwrap().to_string_lossy();
-
                 if let Ok(content) = std::fs::read_to_string(&path) {
                     if content.contains("PRIVATE KEY") {
                         keys.push(SSHKey {
@@ -240,7 +261,6 @@ fn scan_ssh() -> Result<(Vec<SSHKey>, Vec<SSHHostConfig>), String> {
         }
     }
 
-    // ===== PARSE SSH CONFIG =====
     let config_path = format!("{}/config", ssh_path);
 
     if let Ok(config) = std::fs::read_to_string(config_path) {
