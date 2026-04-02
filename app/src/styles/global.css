@@ -23,6 +23,30 @@ body {
     height: 100%;
 }
 
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+    position: relative;
+}
+
+.terminal-container {
+    flex: 1;
+    overflow: hidden;
+    background: #000;
+    position: relative;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 6px;
