@@ -18,6 +18,7 @@ static SSH_SESSIONS: Lazy<Mutex<HashMap<String, SSHState>>> =
 struct SSHState {
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     child: Arc<Mutex<Box<dyn portable_pty::Child + Send + Sync>>>,
+    master: Arc<Mutex<Box<dyn portable_pty::MasterPty + Send>>>,
     temp_files: Vec<String>,
 }
 
@@ -247,6 +248,7 @@ fn ssh_connect(
         SSHState {
             writer,
             child,
+            master: Arc::new(Mutex::new(pair.master)),
             temp_files,
         },
     );
@@ -260,6 +262,22 @@ fn ssh_write(session_id: String, input: String) -> Result<(), String> {
         let mut writer = state.writer.lock().unwrap();
         writer.write_all(input.as_bytes()).map_err(|e| e.to_string())?;
         writer.flush().ok();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn ssh_resize(session_id: String, rows: u16, cols: u16) -> Result<(), String> {
+    if let Some(state) = SSH_SESSIONS.lock().unwrap().get(&session_id) {
+        let master = state.master.lock().unwrap();
+        master
+            .resize(PtySize {
+                rows,
+                cols,
+                pixel_width: 0,
+                pixel_height: 0,
+            })
+            .map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -362,6 +380,7 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
         ssh_connect,
         ssh_write,
+        ssh_resize,
         ssh_disconnect,
         scan_ssh,
         read_ssh_config,
