@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FiSearch, FiPlus, FiTrash2, FiEdit2, FiTerminal, FiKey, FiUser } from "react-icons/fi";
+import { FiSearch, FiPlus, FiTrash2, FiEdit2, FiTerminal, FiKey, FiUser, FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import "../styles/sidebar.css";
 
@@ -12,7 +12,8 @@ export default function Sidebar({
     onEdit,
     onDelete,
     onLogout,
-    importSSH
+    importSSH,
+    onStopHostSessions // NEW PROP
 }) {
     const [search, setSearch] = useState("");
     const username = localStorage.getItem("username");
@@ -21,6 +22,11 @@ export default function Sidebar({
         h.name.toLowerCase().includes(search.toLowerCase()) ||
         h.host.includes(search)
     );
+
+    // Get count of active sessions for this host
+    const getSessionCount = (hostId) => {
+        return sessions.filter(s => s.host.id === hostId).length;
+    };
 
     // Check if a host has an active, connected session
     const getStatus = (host) => {
@@ -31,11 +37,10 @@ export default function Sidebar({
 
     return (
         <div className="sidebar-container glass-panel" style={{ width: width }}>
-            {/* HEADER */}
+            {/* ... header ... */}
             <div className="sidebar-header">
                 <h3>Hosts</h3>
 
-                {/* SEARCH */}
                 <div className="search-container">
                     <FiSearch size={14} color="var(--text-muted)" />
                     <input
@@ -46,7 +51,6 @@ export default function Sidebar({
                     />
                 </div>
 
-                {/* ACTIONS */}
                 <div className="sidebar-actions">
                     <button onClick={onAdd} className="sidebar-btn primary-btn">
                         <FiPlus size={16} /> New Host
@@ -58,11 +62,11 @@ export default function Sidebar({
                 </div>
             </div>
 
-            {/* HOST LIST */}
             <div className="host-list">
                 <AnimatePresence>
                     {filtered.map((h, index) => {
                         const status = getStatus(h);
+                        const count = getSessionCount(h.id);
 
                         return (
                             <motion.div
@@ -82,9 +86,28 @@ export default function Sidebar({
                                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                             <div className="host-name">{h.name}</div>
                                             <div className={`status-dot-indicator ${status}`} title={status}></div>
+
+                                            {count > 0 && (
+                                                <span className="session-count-badge">
+                                                    {count} {count === 1 ? 'tab' : 'tabs'}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="host-details">{h.user}@{h.host}</div>
                                     </div>
+
+                                    {count > 0 && (
+                                        <button
+                                            className="close-all-host-btn"
+                                            title={`Close all ${h.name} sessions`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onStopHostSessions(h.id);
+                                            }}
+                                        >
+                                            <FiX size={14} />
+                                        </button>
+                                    )}
                                 </div>
 
                                 <div className="card-actions">
