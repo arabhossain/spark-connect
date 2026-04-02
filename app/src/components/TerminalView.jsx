@@ -7,9 +7,10 @@ import "xterm/css/xterm.css";
 import "../styles/terminal.css";
 import { FiCopy, FiClipboard } from "react-icons/fi";
 
-export default function TerminalView({ session }) {
+export default function TerminalView({ session, isVisible = true }) {
     const ref = useRef(null);
     const termInstance = useRef(null);
+    const fitAddonRef = useRef(null);
 
     const [menu, setMenu] = useState(null);
 
@@ -39,9 +40,20 @@ export default function TerminalView({ session }) {
 
         const fitAddon = new FitAddon();
         term.loadAddon(fitAddon);
+        fitAddonRef.current = fitAddon;
 
         term.open(ref.current);
-        fitAddon.fit();
+
+        // Small delay to ensure the DOM is ready for measurement
+        setTimeout(() => {
+            if (ref.current && term.element) {
+                try {
+                    fitAddon.fit();
+                } catch (e) {
+                    console.warn("fitAddon.fit() failed during init:", e);
+                }
+            }
+        }, 100);
 
         termInstance.current = term;
 
@@ -63,19 +75,49 @@ export default function TerminalView({ session }) {
             });
         });
 
-        // Resize handling
-        const handleResize = () => {
-            fitAddon.fit();
-        };
+        // Use ResizeObserver for more robust resizing
+        const resizeObserver = new ResizeObserver(() => {
+            if (isVisible && term.element && ref.current) {
+                try {
+                    fitAddon.fit();
+                    invoke("ssh_resize", {
+                        sessionId: session.id,
+                        rows: term.rows,
+                        cols: term.cols,
+                    }).catch(() => { });
+                } catch (e) {
+                    // Ignore transient resize errors
+                }
+            }
+        });
 
-        window.addEventListener("resize", handleResize);
+        if (ref.current) {
+            resizeObserver.observe(ref.current);
+        }
 
         return () => {
             if (unlistenFn) unlistenFn();
+            resizeObserver.disconnect();
             term.dispose();
-            window.removeEventListener("resize", handleResize);
         };
     }, [session.id]);
+
+    // Force fit when visibility changes
+    useEffect(() => {
+        if (isVisible && termInstance.current && fitAddonRef.current) {
+            setTimeout(() => {
+                try {
+                    fitAddonRef.current.fit();
+                    termInstance.current.focus();
+                    invoke("ssh_resize", {
+                        sessionId: session.id,
+                        rows: termInstance.current.rows,
+                        cols: termInstance.current.cols,
+                    }).catch(() => { });
+                } catch (e) { }
+            }, 50);
+        }
+    }, [isVisible]);
 
     // ---------------------------
     // Right Click Menu

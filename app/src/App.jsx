@@ -175,17 +175,21 @@ export default function App() {
     };
 
     const toggleSplit = (type) => {
+        if (sessions.length < 2) {
+            notify.error("Connect to at least 2 servers to use split view");
+            return;
+        }
+
         if (layout === type) {
             setLayout("single");
             setVisibleSessions([activeSession]);
         } else {
             setLayout(type);
+            // If we only have 1 visible session, try to find another one to show
             if (visibleSessions.length < 2) {
                 const other = sessions.find(s => s.id !== activeSession);
                 if (other) {
                     setVisibleSessions([activeSession, other.id]);
-                } else {
-                    setVisibleSessions([activeSession]);
                 }
             }
         }
@@ -473,25 +477,25 @@ export default function App() {
             <div className="resize-handle" onMouseDown={startResizing} />
             <main className="main-content">
                 <Tabs sessions={sessions} setSessions={setSessions} activeSession={activeSession} onSelect={selectSession} onClose={closeSession} actions={tabActions} />
-                {sessions.length > 0 && (
-                    <div className="terminal-actions">
-                        <button className={`icon-btn ${layout === "split-v" ? "active" : ""}`} title="Split Vertical" onClick={() => toggleSplit("split-v")}>
-                            <VscSplitVertical size={16} />
-                        </button>
-                        <button className={`icon-btn ${layout === "split-h" ? "active" : ""}`} title="Split Horizontal" onClick={() => toggleSplit("split-h")}>
-                            <VscSplitHorizontal size={16} />
-                        </button>
-                        <button className={`icon-btn ${layout === "single" ? "active" : ""}`} title="Single View" onClick={() => setLayout("single")}>
-                            <VscLayoutCentered size={16} />
-                        </button>
-                        {layout !== "single" && (
-                            <button className="icon-btn danger" title="Clear Split" onClick={() => { setLayout("single"); setVisibleSessions([activeSession]); }}>
-                                <FiSlash size={16} />
-                            </button>
-                        )}
-                    </div>
-                )}
                 <div className="terminal-container">
+                    {sessions.length > 0 && (
+                        <div className="terminal-actions">
+                            <button className={`icon-btn ${layout === "split-v" ? "active" : ""}`} title="Split Vertical" onClick={() => toggleSplit("split-v")}>
+                                <VscSplitVertical size={16} />
+                            </button>
+                            <button className={`icon-btn ${layout === "split-h" ? "active" : ""}`} title="Split Horizontal" onClick={() => toggleSplit("split-h")}>
+                                <VscSplitHorizontal size={16} />
+                            </button>
+                            <button className={`icon-btn ${layout === "single" ? "active" : ""}`} title="Single View" onClick={() => setLayout("single")}>
+                                <VscLayoutCentered size={16} />
+                            </button>
+                            {layout !== "single" && (
+                                <button className="icon-btn danger" title="Clear Split" onClick={() => { setLayout("single"); setVisibleSessions([activeSession]); }}>
+                                    <FiSlash size={16} />
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {sessions.length === 0 ? (
                         <Dashboard hosts={hosts} onAdd={() => setModalOpen(true)} onConnect={openSession} />
                     ) : (
