@@ -11,13 +11,16 @@ const router = express.Router();
 router.get("/", auth, async (req, res) => {
     try {
         const userId = req.user.id;
+
         const [groups] = await db.query(
-            "SELECT * FROM groups WHERE ownerId = ?",
+            "SELECT * FROM user_groups WHERE ownerId = ?",
             [userId]
         );
+
         res.json(groups);
     } catch (err) {
-        res.status(500).json(err);
+        console.error(err);
+        res.status(500).json({ message: "Failed to fetch groups" });
     }
 });
 
@@ -28,16 +31,26 @@ router.post("/", auth, async (req, res) => {
     try {
         const userId = req.user.id;
         const { name } = req.body;
+
+        if (!name) {
+            return res.status(400).json({ message: "Group name is required" });
+        }
+
         const id = crypto.randomUUID();
 
         await db.query(
-            "INSERT INTO groups (id, name, ownerId) VALUES (?, ?, ?)",
+            "INSERT INTO user_groups (id, name, ownerId) VALUES (?, ?, ?)",
             [id, name, userId]
         );
 
-        res.json({ id, name });
+        res.status(201).json({
+            id,
+            name,
+            ownerId: userId
+        });
     } catch (err) {
-        res.status(500).json(err);
+        console.error(err);
+        res.status(500).json({ message: "Failed to create group" });
     }
 });
 
@@ -46,11 +59,23 @@ router.post("/", auth, async (req, res) => {
  */
 router.delete("/:id", auth, async (req, res) => {
     try {
+        const userId = req.user.id;
         const { id } = req.params;
-        await db.query("DELETE FROM groups WHERE id = ?", [id]);
+
+        // Optional safety: ensure user owns the group
+        const [result] = await db.query(
+            "DELETE FROM user_groups WHERE id = ? AND ownerId = ?",
+            [id, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Group not found or unauthorized" });
+        }
+
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json(err);
+        console.error(err);
+        res.status(500).json({ message: "Failed to delete group" });
     }
 });
 
