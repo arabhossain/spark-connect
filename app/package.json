@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:release": "cargo tauri build && node scripts/deploy-release.js",
     "tauri": "cargo tauri",
     "tauri:dev": "cargo tauri dev"
   },

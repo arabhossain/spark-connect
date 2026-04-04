@@ -1,149 +1,56 @@
-# SparkConnect
+# Sparks Connect ⚡
 
-A secure SSH host manager with authentication, host management, and multi-session support.
+Sparks Connect is a high-performance, multi-tenant SSH Client platform built to manage distributed server infrastructures cleanly and securely. Built atop Tauri's native Rust execution stack with an integrated scalable NodeJS distribution dashboard. 
 
----
+## Features
 
-## Tech Stack
+- **Blazing Fast SSH Emulation:** Built over `xterm.js` and securely piped natively into Rust standard processes mimicking real POSIX terminal emulation. 
+- **Active Telemetry & Session Monitoring:** Constant background auditing isolates exact session IDs tracking live commands dynamically through optimized MySQL filtering via `JSON_EXTRACT`.
+- **Multi-Tenant Orgs:** Granular roles mapping `owners`, `organization_user`, and standard free tier users to exact connection assets.
+- **Auto-Distribution Center:** Seamlessly designed central `Download` server routing distribution assets intuitively using standard web `href` components directly linking your active compiled versions securely.
 
-* Frontend: React
-* Backend: Node.js + Express
-* Database: MySQL
-* Optional Desktop: Tauri
+## 🛠 Project Structure
 
----
+- `/app`: The Native Desktop application powered by **Tauri**, providing access to native raw SSH bridges and system tracking. 
+- `/web`: The User Dashboard, providing telemetry views, historical log playbacks, access sharing boundaries, and the download distribution layer. Built with React and Vite.
+- `/backend`: The Express/MySQL Server hosting telemetry logs, dynamic user access tokens, and organizational mappings securely via strict JWT extraction algorithms. 
 
-## Installation
+## 🔌 Running Locally
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/arabhossain/spark-connect.git
-cd sparkconnect
+### Backend 
+Requires standard MySQL bindings mapped to `.env`:
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3306
+...
 ```
-
----
-
-### 2. Backend Setup
-
 ```bash
 cd backend
-npm install
-```
-
-Start server:
-
-```bash
 node server.js
 ```
 
-Backend runs on:
-
-```
-http://localhost:4000
-```
-
----
-
-### 3. Frontend Setup
-
+### Web Dashboard
 ```bash
-cd frontend
-npm install
-npm run tauri:dev
+cd web
+npm run dev
 ```
 
-Frontend runs on:
-
-```
-http://localhost:5173
-```
-
----
-
-### ️ 4. Environment Variables
-
-Copy the example file and configure your environment:
-
+### App (Native Tauri Core)
 ```bash
-cp .env.example .env
+cd app
+npm run tauri dev
 ```
 
-Then update the values inside `.env` with your own database credentials and secrets:
+## 🚀 Building & Exporting Binaries
 
-* DB connection details
-* JWT secret
-* Encryption secret
+To automatically build the Tauri application and elegantly transfer those binary distribution packages straight to the Web Directory distribution core, we have specifically built an automation proxy script routing `cargo tauri build`.
 
-## 🦀 Installing Rust (Mac & Ubuntu)
-
-You need Rust for the Tauri backend.
-
----
-
-# 🍎 macOS
-
-### 1. Install via official installer
-
-```bash id="mac_rust_install"
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+Navigate into the `/app` folder and run:
+```bash
+npm run build:release
 ```
 
-### 2. Follow prompts
+Once parsing and native cargo compilation completes, you will see output proving the binaries successfully linked seamlessly to `/web/public/client` sorted meticulously by OS type without any manual effort necessary!
 
-* Choose default installation (press `1`)
-
-### 3. Load Rust into current shell
-
-```bash id="mac_rust_env"
-source $HOME/.cargo/env
-```
-
-### 4. Verify installation
-
-```bash id="mac_rust_verify"
-rustc --version
-cargo --version
-```
-
----
-
-# 🐧 Ubuntu / Linux
-
-### 1. Install required dependencies
-
-```bash id="ubuntu_deps"
-sudo apt update
-sudo apt install -y curl build-essential
-```
-
-### 2. Install Rust
-
-```bash id="ubuntu_rust_install"
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-### 3. Load Rust environment
-
-```bash id="ubuntu_env"
-source $HOME/.cargo/env
-```
-
-### 4. Verify installation
-
-```bash id="ubuntu_verify"
-rustc --version
-cargo --version
-```
-
----
-
-## After Installation (Both)
-
-Restart your terminal or run:
-
-```bash id="reload_shell"
-source ~/.cargo/env
-```
-
----
+## ☁️ Cross OS GitHub Automation
+In `.github/workflows/release.yml` you will find standard instructions capable of instantly translating GitHub events into massive cross-native pipelines capable of spinning up AWS/cloud Mac, Linux, and Windows containers generating binary distribution payloads automatically. All tags `v*.*` auto-generate Draft Releases!
