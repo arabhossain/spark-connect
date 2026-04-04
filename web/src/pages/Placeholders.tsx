@@ -155,10 +155,10 @@ export function Download() {
              <h3 className="text-2xl font-bold mb-2">macOS</h3>
              <p className="text-muted-foreground mb-8 flex-1">Apple Silicon or Intel. Built natively for maximum battery efficiency.</p>
              <div className="flex flex-col gap-3">
-                <a href="/client/mac/SparksConnect-mac-arm64.dmg" download className="w-full text-center bg-primary hover:bg-primary-light text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
+                <a href="/client/mac/sparks-connect-arm64_latest.dmg" download className="w-full text-center bg-primary hover:bg-primary-light text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
                   Download for Apple Silicon (M1/M2/M3)
                 </a>
-                <a href="/client/mac/SparksConnect-mac-x64.dmg" download className="w-full text-center bg-white/5 hover:bg-white/10 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">
+                <a href="/client/mac/sparks-connect-x64_latest.dmg" download className="w-full text-center bg-white/5 hover:bg-white/10 text-white rounded-lg py-2.5 text-sm font-medium transition-colors">
                   Download for Intel Mac
                 </a>
              </div>
@@ -173,7 +173,7 @@ export function Download() {
              <h3 className="text-2xl font-bold mb-2">Windows</h3>
              <p className="text-muted-foreground mb-8 flex-1">Fully integrated with Windows 10 & 11 natively leveraging robust cryptography layers.</p>
              <div className="flex flex-col gap-3">
-                <a href="/client/windows/sparks-connect.exe" download className="w-full text-center bg-primary hover:bg-primary-light text-white rounded-lg py-2.5 text-sm font-semibold transition-colors mt-auto">
+                <a href="/client/windows/sparks-connect_latest.exe" download className="w-full text-center bg-primary hover:bg-primary-light text-white rounded-lg py-2.5 text-sm font-semibold transition-colors mt-auto">
                   Download Setup (.exe)
                 </a>
              </div>
@@ -188,14 +188,14 @@ export function Download() {
              <h3 className="text-2xl font-bold mb-2">Linux</h3>
              <p className="text-muted-foreground mb-8 flex-1">Available in universal packages built dynamically across Debian and Arch structures.</p>
              <div className="flex flex-col gap-3">
-                <a href="/client/linux/sparks-connect_1.0.0_amd64.deb" download className="w-full text-center bg-primary hover:bg-primary-light text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
+                <a href="/client/linux/sparks-connect_latest.deb" download className="w-full text-center bg-primary hover:bg-primary-light text-white rounded-lg py-2.5 text-sm font-semibold transition-colors">
                   Download (.deb)
                 </a>
                 <div className="grid grid-cols-2 gap-2">
-                   <a href="/client/linux/sparks-connect-x86_64.tar.gz" download className="text-center bg-white/5 hover:bg-white/10 text-white rounded-lg py-2.5 text-xs font-medium transition-colors">
+                   <a href="/client/linux/sparks-connect_latest.tar.gz" download className="text-center bg-white/5 hover:bg-white/10 text-white rounded-lg py-2.5 text-xs font-medium transition-colors">
                      .tar.gz
                    </a>
-                   <a href="/client/linux/sparks-connect.AppImage" download className="text-center bg-white/5 hover:bg-white/10 text-white rounded-lg py-2.5 text-xs font-medium transition-colors">
+                   <a href="/client/linux/sparks-connect_latest.AppImage" download className="text-center bg-white/5 hover:bg-white/10 text-white rounded-lg py-2.5 text-xs font-medium transition-colors">
                      AppImage
                    </a>
                 </div>

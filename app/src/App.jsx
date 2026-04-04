@@ -19,7 +19,7 @@ import "./styles/global.css";
 import "./styles/tabs.css";
 import "./styles/login.css";
 
-const API = "http://localhost:4000";
+const API = "https://sparkconnect.codesparks.me";
 
 export default function App() {
     const [token, setToken] = useState(localStorage.getItem("token"));
